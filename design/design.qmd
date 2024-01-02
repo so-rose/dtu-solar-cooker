@@ -1,0 +1,245 @@
+---
+title: "Solar Cooker Design"
+date: "2024-01-01"
+abstract: |
+  Prototyping design for a solar cooker.
+author:
+  - name: Sofus Albert Høgsbro Rose (s174509)
+    email: s174509@dtu.dk
+    affiliation: 
+      - name: Technical University of Denmark
+        city: Kongens Lyngby
+        url: dtu.dk
+
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+    #self-contained-math: true
+    execute:
+      output: "asis"
+      warning: false
+  pdf:
+    toc: true
+    execute:
+      echo: false
+      warning: false
+      panel: "center"
+  ipynb:
+    toc: true
+    execute:
+      echo: true
+      warning: false
+---
+\newpage
+
+```{python}
+from __future__ import annotations
+from typing import Callable, Union
+import itertools
+import contextlib
+from functools import reduce
+from dataclasses import dataclass
+
+import scipy as sc
+import sympy as sp
+import sympy.physics.units as spu
+import numpy as np
+import pandas as pd
+
+import spb
+import holoviews as hv
+import hvplot.pandas
+
+# HoloViews Configuration
+hv.extension("matplotlib", logo=False)
+hv.notebook_extension(display_formats=['html','png'])
+
+# Sympy Printing Configuration
+from IPython.display import display, display_latex
+def disp(
+	*exprs,
+	numbering: bool = False,
+	align_on: str | None = None,
+):
+	if align_on is not None:
+		exprs_latex = (
+			("\\begin{equation}" if numbering else "\\begin{equation*}")
+			+ "\\begin{aligned}"
+			+ "\\\\".join([
+				sp.latex(
+					expr,
+					mode="plain"
+				).replace(align_on, f" & {align_on}")
+				for expr in exprs
+			])
+			+ "\\end{aligned}"
+			+ ("\\end{equation}" if numbering else "\\end{equation*}")
+		)
+
+	else:
+		exprs_latex = "\n\n".join([
+			sp.latex(
+				expr,
+				mode="equation" if numbering else "equation*",
+			)
+			for expr in exprs
+		])
+
+	display_latex(exprs_latex, raw=True)
+```
+
+# Design of Parabolic Reflector
+We define the paraboloid reflector parametrically:
+```{python}
+def paraboloid(
+    u: sp.Symbol,
+    theta: sp.Symbol,
+    radius: float,
+    height: float,
+):
+    return sp.Matrix([
+        radius * sp.sqrt(u / height) * sp.cos(theta),
+        radius * sp.sqrt(u / height) * sp.sin(theta),
+        u,
+    ])
+```
+```{python}
+u = sp.Symbol("u", real=True, positive=True)
+theta = sp.Symbol("theta", real=True, positive=True)
+
+disp(
+    paraboloid(u, theta, sp.Symbol("r"), sp.Symbol("h"))
+)
+```
+
+Our bounding box is $300 \text{mm}^3$, which we plug in directly
+```{python}
+#| echo: true
+
+bound_side_length = spu.convert_to(
+    300 * spu.mm,
+    spu.meter,
+)
+
+diameter_reflector = bound_side_length
+height_reflector = bound_side_length / 4
+```
+and use to compute the particular parameterization of the reflector we need
+```{python}
+# Computed
+radius_reflector = diameter_reflector / 2
+
+reflector = paraboloid(
+    u,
+    theta,
+    radius_reflector / spu.meter,
+    height_reflector / spu.meter,
+)
+disp(reflector)
+```
+including the focus point:
+```{python}
+focus_point_reflector = sp.Matrix([
+    0,
+    0,
+    radius_reflector**2 / (4*height_reflector),
+])
+disp(focus_point_reflector.n())
+```
+
+Finally, we plot our desired reflector:
+```{python}
+_reflector_expr = list(reflector)
+spb.plot3d_parametric_surface(
+    _reflector_expr,
+    (u, 0, height_reflector / spu.meter), (theta, 0, 2*sp.pi), "expr",
+    n=50,
+    backend=spb.KB,
+)
+```
+
+_We presume a choice of coordinate system that places the sun, a perfect directional light, directly above this construction._
+
+
+
+# Properties of Heating Area
+We introduce two variables to describe the (max) diameter of the heating container, and the flux power density of the solar light.
+```{python}
+diameter_container = sp.Symbol(
+    "d_c", real=True, positive=True,
+) * spu.meter
+radius_container = diameter_container / 2
+
+intensity_solar = sp.Symbol(
+    "I_s", real=True, positive=True,
+) * spu.watt/spu.meter**2  ## Surface Power Density
+
+## See the Solar Constant:
+# - https://en.wikipedia.org/wiki/Solar_constant
+# - https://en.wikipedia.org/wiki/Surface_power_density
+
+disp(diameter_container / spu.meter)
+disp(intensity_solar / (spu.watt/spu.meter**2))
+```
+
+We want this container (the actual heated surface) to evenly receive heat energy reflected by the paraboloid reflector.
+Thus, we define it to also be a paraboloid, similar to the large container.
+
+The collected container will receive all the energy that it itself is not masking out.
+The total non-masked collection area is:
+```{python}
+total_collection_area = sp.pi * radius_reflector**2
+masked_collection_area = sp.pi * radius_container**2
+
+unmasked_collection_area = total_collection_area - masked_collection_area 
+
+disp(
+    unmasked_collection_area.n(2)
+)
+```
+
+From thus
+```{python}
+total_power = sp.simplify(
+    solar_intensity * unmasked_collection_area
+)
+disp(
+    sp.Eq(
+        sp.Symbol("P_s"),
+        total_power,
+    )
+)
+```
+
+We now wish to design a surface to collect this total power in a uniform manner.
+
+This is our procedure:
+
+- Solve for the ring that places the top of the container along the line between the upper boundary of the reflector and the focus point.
+- From the similarity, we can reuse the aspect ratio of the reflector for the collector, and combined with knowing the location of the upper ring, we can properly define the surface of the container.
+
+
+
+# Fabrication Procedure
+Using the specifications, we produce a scaffolding 3D printable file of the collector container, such that the computed ideal exterior will be achieved after adding tubing.
+
+Using tubes, we wrap the exterior of the 3D printed collector container.
+The inlet should be threadable directly up, through the center.
+The outlet should be at the direct bottom.
+
+We situate the tubing using heatable adhesives on the interior.
+Then, we paint the tubes using black spray-paint, such that the collector exterior approximates a non-rough, entirely absorbive surface.
+
+We fabricate the reflector as follows:
+- Ideally, we could do this: <https://link.springer.com/chapter/10.1007/978-981-15-4485-9_81>
+- The critical thing is the reflectivity. Glass is a good choice.
+- In practice, we try a reflective coating first.
+
+On the top boundary of the collector, four scaffolding wires should be mounted in order to correctly mount the collector.
+A hole should be drilled in the bottom of the collector, as the water outlet.
+
+Two larger water containers (perhaps doughnut shaped?), one cold and one hot, can be placed respectively above/below the collector in order to feed the cold and receive the hot water.
+
+Flow rate should be be empirically determined and controlled with a simple adjustable clip, to a rate determined by simulation to achieve the desired water heating affect during its journey through the mechanism.

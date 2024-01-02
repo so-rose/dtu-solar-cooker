@@ -1,0 +1,99 @@
+---
+title: "Solar Cooker Project Planning"
+date: "2024-01-02"
+abstract: |
+  Project planning for a solar cooker.
+author:
+  - name: Sofus Albert Høgsbro Rose (s174509)
+    email: s174509@dtu.dk
+    affiliation: 
+      - name: Technical University of Denmark
+        city: Kongens Lyngby
+        url: dtu.dk
+
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+    #self-contained-math: true
+    execute:
+      output: "asis"
+      warning: false
+  pdf:
+    toc: true
+    execute:
+      echo: false
+      warning: false
+      panel: "center"
+  ipynb:
+    toc: true
+    execute:
+      echo: true
+      warning: false
+---
+\newpage
+
+# GANTT Chart
+```{mermaid}
+gantt
+    title Design-Build 3 Diagram
+    dateFormat YYYY-MM-DD
+    section Simulation
+        Design :2023-01-01, 2d
+        Thermal :2d
+        MVP Validation :2023-01-07, 2d
+        Validation :2023-01-12, 4d
+    section Fabrication
+        Geometry :2023-01-04, 1d
+        MVP :3d
+        Production :5d
+    section Control
+        Temp :2023-01-08, 2d
+        Shaders :2d
+        Instrument :2023-01-09, 5d
+    section Report
+        Preliminary :2023-01-01, 7d
+        Body :7d
+        Polish :2d
+        Exam :1d
+```
+
+# TODO
+**Simulation**
+
+- [ ] Design: How is it going to work? From first principles.
+- [ ] Thermal Simulation: Execute a heat transfer simulation.
+- [ ] MVP Validation: Validate that the simulation (and presumptions therein) was done accurately.
+- [ ] Validation: Validate that the simulation (and presumptions therein) was done accurately.
+
+**Fabrication**
+
+- [ ] Geometry: Design the 3D-printable model.
+- [ ] MVP: Fabricate a first attempt, which should work minimally. **Test with artificial sun at the end**.
+- [ ] Production: Fabricate the final product.
+
+**Control**
+
+- [ ] Temperature Sensor: Install the temperature sensor.
+- [ ] Shaders: Install the shader control.
+- [ ] Instrument: Instrument real-time data, for internal use and for export / graphing.
+
+**Report**
+
+- [ ] Preliminary: The design document (`.qmd`) will later become the report.
+- [ ] Body: Writing happens parallel to post-MVP refinements.
+- [ ] Polish: Refine report and produce a slideshow variant.
+- [ ] Exam: Final preparations and exam.
+
+## Fabrication List
+- [ ] Reflector: High-R parabolic shape.
+- [ ] Container: Internal parabolic boundary is 3D-printed, around which liquid tubes are wrapped, which in turn are painted with a high-A material that minimizes blackbody radiation loss.
+
+## Shopping List
+- [ ] Water Tubing
+- [ ] Water Tube Clip
+- [ ] 2x Water Container (doughnut?)
+- [ ] Black Spray Paint
+- [ ] 2x Artificial Sun Test Slots
+- [ ] Fabrication Facilities

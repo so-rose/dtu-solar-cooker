@@ -6,7 +6,8 @@ Highly WIP.
 See `design/plan.qmd` for GANTT chart and updated TODO list.
 
 ## Design
-For design-phase, see `design/plan.qmd` for GANTT chart and updated TODO list.
+For design-phase, see `design/main.qmd`.
+This is a Python-based Quarto document, which should also be readable as plain-text.
 
 
 

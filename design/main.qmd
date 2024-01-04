@@ -1,0 +1,514 @@
+---
+title: "Solar Cooker Design"
+date: "2024-01-01"
+abstract: |
+  Prototyping design for a solar cooker.
+author:
+  - name: Sofus Albert Høgsbro Rose (s174509)
+    email: s174509@dtu.dk
+    affiliation: 
+      - name: Technical University of Denmark
+        city: Kongens Lyngby
+        url: dtu.dk
+
+format:
+  html:
+    toc: true
+    code-fold: true
+    #embed-resources: true
+    #self-contained-math: true
+    execute:
+      output: "asis"
+      warning: false
+  pdf:
+    toc: true
+    execute:
+      echo: false
+      warning: false
+      panel: "center"
+---
+\newpage
+
+```{python}
+from __future__ import annotations
+from typing import Callable, Union
+import itertools
+import contextlib
+from functools import reduce
+from dataclasses import dataclass
+
+import scipy as sc
+import sympy as sp
+import sympy.physics.units as spu
+import numpy as np
+import pandas as pd
+
+import spb
+import holoviews as hv
+import hvplot.pandas
+
+# HoloViews Configuration
+hv.extension("matplotlib", logo=False)
+hv.notebook_extension(display_formats=['html','png'])
+
+# Sympy Printing Configuration
+from IPython.display import display, display_latex
+def disp(
+	*exprs,
+	numbering: bool = False,
+	align_on: str | None = None,
+):
+	if align_on is not None:
+		exprs_latex = (
+			("\\begin{equation}" if numbering else "\\begin{equation*}")
+			+ "\\begin{aligned}"
+			+ "\\\\".join([
+				sp.latex(
+					expr,
+					mode="plain"
+				).replace(align_on, f" & {align_on}")
+				for expr in exprs
+			])
+			+ "\\end{aligned}"
+			+ ("\\end{equation}" if numbering else "\\end{equation*}")
+		)
+
+	else:
+		exprs_latex = "\n\n".join([
+			sp.latex(
+				expr,
+				mode="equation" if numbering else "equation*",
+			)
+			for expr in exprs
+		])
+
+	display_latex(exprs_latex, raw=True)
+```
+
+# General Design
+The goal is to design a device, with the dimensions 300x300x300, which effectively uses solar light energy to heat water.
+
+We will use a parabolic reflector to focus the maximal area of incoming solar power density onto a surface bounded by coiled water tubes.
+
+
+
+# Design of Parabolic Reflector
+We define the paraboloid reflector parametrically
+```{python}
+def paraboloid(
+    u: sp.Symbol,
+    theta: sp.Symbol,
+    radius: float,
+    height: float,
+):
+    return sp.Matrix([
+        radius * sp.sqrt(u / height) * sp.cos(theta),
+        radius * sp.sqrt(u / height) * sp.sin(theta),
+        u,
+    ])
+```
+and state its general form:
+```{python}
+u = sp.Symbol("u", real=True, positive=True)
+theta = sp.Symbol("theta", real=True, positive=True)
+
+disp(
+    paraboloid(u, theta, sp.Symbol("r"), sp.Symbol("h"))
+)
+```
+
+Our bounding box is $300 \text{mm}^3$, which we plug in directly as the diameter of the top ring
+```{python}
+#| echo: true
+
+bound_side_length = spu.convert_to(
+    300 * spu.mm,
+    spu.meter,
+)
+
+diameter_reflector = bound_side_length
+diameter_reflector_SI = diameter_reflector / spu.meter
+height_reflector = bound_side_length / 8
+```
+and use to compute the particular parameterization of the reflector we need:
+```{python}
+# Computed
+radius_reflector = diameter_reflector / 2
+
+reflector = paraboloid(
+    u,
+    theta,
+    radius_reflector / spu.meter,
+    height_reflector / spu.meter,
+)
+disp(reflector)
+```
+
+The "focus point"
+```{python}
+height_focus_point = radius_reflector**2 / (4*height_reflector)
+focus_point_reflector = sp.Matrix([
+    0,
+    0,
+    height_focus_point,
+])
+disp(focus_point_reflector.n())
+```
+describes the destination point of all light reflected by the paraboloid.
+
+Finally, we plot our desired reflector, with a small sphere around the focus point:
+```{python}
+u_s, v_s = sp.symbols("u_s v_s")
+spb.graphics(
+	spb.surface_parametric(
+			*reflector,
+			(u, 0, height_reflector / spu.meter),
+			(theta, 0, 2*sp.pi),
+			"expr",
+			n=50,
+	),
+	spb.surface_parametric(
+		focus_point_reflector[0] + (_r:=0.008) * sp.cos(u_s) * sp.sin(v_s),
+		focus_point_reflector[1] + _r * sp.sin(u_s) * sp.sin(v_s),
+		focus_point_reflector[2] / spu.meter + _r * sp.cos(v_s),
+		(u_s, 0, 2*sp.pi),
+		(v_s, 0, 2*sp.pi),
+		"expr",
+		n=20,
+	),
+	show=True,
+	backend=spb.KB,
+)
+```
+
+*We presume a choice of coordinate system that places the sun, a perfect directional light, directly above this construction.*
+
+## Trapezoidal Discretization
+To actually cheaply manufacture this mirror, we must create a discretization of this paraboloid into a number of small trapezoids.
+
+In practice, we will cut/fabricate the trapezoids at this particular size, and attach precisely cut household Al foil (a cheap, non-rough, highly reflective material) to them. Then, they will be mounted into predefined elements of the paraboloid print.
+
+Design TBD
+
+
+
+# Energy Transfer
+We describe the energy transfer properties, including the design of the heating container.
+
+We introduce two variables to describe the (max) diameter of the heating container, and the flux power density of the solar light.
+```{python}
+diameter_container = sp.Symbol(
+    "d_c", real=True, positive=True,
+) * spu.meter
+diameter_container_SI = diameter_container / spu.meter
+#diameter_container = (diameter_reflector/8)
+radius_container = diameter_container / 2
+
+intensity_solar = sp.Symbol(
+    "I_s", real=True, positive=True,
+) * spu.watt/spu.meter**2  ## Surface Power Density
+intensity_solar_SI = intensity_solar / (spu.watt/spu.meter**2)
+
+## See the Solar Constant:
+# - https://en.wikipedia.org/wiki/Solar_constant
+# - https://en.wikipedia.org/wiki/Surface_power_density
+
+disp(diameter_container / spu.meter, intensity_solar_SI)
+```
+
+## Design of Heating Container
+We want our container to evenly receive heat energy reflected by the paraboloid reflector.
+Thus, we define it to also be a paraboloid.
+
+This method minimizes energy loss down to three primary sources:
+- Shading due to the container blocking part of the parabolic reflector.
+- Non-reflected light by the reflector.
+- Non-absorbed light at the boundary of the container.
+
+First, we define the actual area which is actively collecting solar energy as the "non-masked collection area":
+```{python}
+#| echo: true
+total_collection_area = sp.pi * radius_reflector**2
+masked_collection_area = sp.pi * radius_container**2
+
+unmasked_collection_area = total_collection_area - masked_collection_area 
+
+total_collection_power = sp.simplify(
+	intensity_solar * total_collection_area
+)
+
+disp(
+    unmasked_collection_area.n(2)
+)
+```
+
+We use the unmasked collection area to compute the total power transmitted, in terms of the "solar constant" $I_s$ (**NOTE: This is some kind of integral of the sun's spectral power distribution.**)
+```{python}
+total_power = sp.simplify(
+    intensity_solar * unmasked_collection_area
+)
+disp(
+    sp.Eq(
+        sp.Symbol("P_s"),
+        total_power,
+    )
+)
+```
+
+Reasonably speaking, the **wattage per square meter** transmitted by the sun (aka. the value for $I_s$) can be fixed to $1.361\  \text{kWh}/\text{m}^2$.
+This results in the following total incident solar power, as a function of the heating container diameter:
+```{python}
+disp(
+    sp.Eq(
+        sp.Function("P_s")(diameter_container_SI),
+        total_power.subs({
+					intensity_solar_SI: 1361, #spu.watt/spu.meter**2
+					#diameter_container_SI: 0.08,
+				}).n(),
+    )
+)
+```
+
+## Choice of Container Diameter
+Small diameters are hard to work with in practice - but large diameters block too much power.
+There is a subjectiveness to what the ideal choice.
+
+Here's the graph of **wattage** as a function of container diameter:
+```{python}
+%matplotlib inline
+spb.plot(
+	total_power.subs({
+		intensity_solar_SI: 1361, #spu.watt/spu.meter**2
+	}) / spu.watt,
+	(diameter_container_SI, 0, diameter_reflector_SI),
+	show=True
+)
+```
+
+Here's the graph of **retained energy factor** (percent/100) based on container diameter:
+```{python}
+%matplotlib inline
+spb.plot(
+	(total_power / total_collection_power).subs({
+		intensity_solar_SI: 1361, #spu.watt/spu.meter**2
+	}),
+	(diameter_container_SI, 0, diameter_reflector_SI),
+	show=True
+)
+```
+
+Since we have **1/8 inch copper tubes** ($0.3175 \text{cm}$) available to us, we are not constrained by what we're wrapping around the heating container.
+
+Thus, we select $5 \text{cm}$ as a reasonable tradeoff of fabrication simplicity relative to power loss.
+The total incident power power at this value becomes:
+```{python}
+disp(
+    sp.Eq(
+        sp.Function("P_s")(5 * spu.cm),
+        total_power.subs({
+					intensity_solar_SI: 1361, #spu.watt/spu.meter**2
+					diameter_container_SI: 0.05,
+				}).n(),
+    )
+)
+```
+
+The retained power after shading using this choice of container diameter is just over 97 percent:
+```{python}
+diameter_container_chosen = 0.05 * spu.meter
+
+disp(
+	(total_power / total_collection_power).subs({
+		intensity_solar_SI: 1361, #spu.watt/spu.meter**2
+		diameter_container_SI: 0.05,
+	}) * 100 * spu.percent
+)
+```
+
+
+
+## Solving for the Container Height
+Where exactly should the container sit?
+
+First, we compute the angle from the upper ring of the reflector to the focus point
+```{python}
+angle_to_focus = sp.atan(
+	(height_focus_point - height_reflector)
+	/ radius_reflector
+)
+```
+
+This angle can be used to form a right triangle between any edge point on the top reflector ring, the focus point, and the center of the reflector ring.
+
+The height of this right triangle is the height of the ring.
+Trigonometrically, it can be setup as
+```{python}
+height_container = sp.simplify(
+	sp.tan(angle_to_focus) * (
+		(diameter_reflector - diameter_container) / 2
+	)
+)
+
+disp(height_container)
+```
+which computes out to
+```{python}
+chosen_height_container = height_container.subs({
+	diameter_container_SI: sp.nsimplify(0.05),
+})
+disp(
+	chosen_height_container.n()
+)
+```
+
+Finally, when setting up the parameterization of the heating container, the container needs to be shifted up by the difference between the focus point and the reflector height.
+```{python}
+shift_reflector_to_container = height_focus_point - height_reflector
+```
+
+With this information, we create the paraboloid representing the container
+```{python}
+container = paraboloid(
+    u,
+    theta,
+    2*radius_container / spu.meter,
+    height_container / spu.meter,
+) + sp.Matrix([
+	0,
+	0,
+	shift_reflector_to_container / spu.meter,
+])
+disp(container)
+```
+chosen specifically to be
+```{python}
+chosen_container = container.subs({
+	diameter_container_SI: sp.nsimplify(diameter_container_chosen/spu.meter),
+})
+disp(chosen_container)
+```
+and plot it visually:
+```{python}
+spb.plot3d_parametric_surface(
+    list(reflector),
+    list(chosen_container),
+    (u, 0, height_reflector / spu.meter), (theta, 0, 2*sp.pi), "expr",
+    n=50,
+    backend=spb.KB,
+)
+```
+
+
+
+## Computing Wire Properties
+**TBD: Fix height of coil, compute wire length, compute contained volume.**
+
+As mentioned, the wire in use is **1/8 inch copper tubes** ($0.3175 \text{cm}$).
+
+Considering only the center of this wire for a moment, we parameterize it as a 1D curve:
+```{python}
+chosen_diameter_container_SI = sp.nsimplify(0.05)
+chosen_radius_container_SI = chosen_diameter_container_SI/2
+
+chosen_radius_container = chosen_radius_container_SI * spu.meter
+
+coil_diameter = sp.nsimplify(0.05) * spu.meter
+wire_diameter = spu.convert_to(
+	sp.nsimplify(0.3175) * spu.cm,
+	spu.meter,
+)
+wire_radius = wire_diameter / 2
+
+chosen_container_radius = spu.meter * (
+	chosen_diameter_container_SI/2 - sp.sqrt(
+		chosen_container[0]**2
+		+ chosen_container[1]**2
+	).subs({
+		u: (
+			chosen_height_container + height_reflector
+		) / spu.meter + (
+			wire_diameter * u/(2*sp.pi)
+		) / spu.meter
+	}).simplify()
+)
+
+u = sp.Symbol("u", real=True, positive=True)
+v = sp.Symbol("v", real=True, positive=True)
+coiled_wire_surface = sp.simplify(
+	sp.Matrix([
+		chosen_container_radius*sp.cos(u) + (
+			wire_radius*sp.cos(u)*sp.cos(v)
+		),
+		chosen_container_radius*sp.sin(u) + (
+			wire_radius*sp.sin(u)*sp.cos(v)
+		),
+		chosen_height_container+height_reflector + (
+			wire_diameter * u/(2*sp.pi)
+		) + (
+			wire_radius * sp.sin(v)
+		),
+	]) / spu.meter
+)
+disp(coiled_wire_surface)
+
+spb.graphics(
+	spb.surface_parametric(
+		*reflector,
+		(u, 0, height_reflector / spu.meter),
+		(theta, 0, 2*sp.pi),
+		"expr",
+		n=50,
+	),
+	spb.surface_parametric(
+		focus_point_reflector[0] + (_r:=0.004) * sp.cos(u_s) * sp.sin(v_s),
+		focus_point_reflector[1] + _r * sp.sin(u_s) * sp.sin(v_s),
+		focus_point_reflector[2] / spu.meter + _r * sp.cos(v_s),
+		(u_s, 0, 2*sp.pi),
+		(v_s, 0, 2*sp.pi),
+		"expr",
+		n=20,
+	),
+	spb.surface_parametric(
+		*chosen_container,
+		(u, 0, height_reflector / spu.meter),
+		(theta, 0, 2*sp.pi),
+		"expr",
+		n=100,
+	),
+	spb.surface_parametric(
+		*coiled_wire_surface,
+		(u, 0, 10*sp.pi), (v, 0, 10*sp.pi), "expr",
+		n=100,
+	),
+	backend=spb.KB,
+)
+```
+
+
+
+
+# Fabrication Procedure
+- [ ] Compute required length of 1/8 inch copper tubing for wrapping around, including space for outlet and inlet.
+- [ ] Compute volume contained within each segment of tubing, aka. measure the thickness.
+- [ ] Compute number and size of mirror (glass) trapezoids.
+- [ ] Compute printable geometry for the reflector, including slots for inserting trapezoid mirrors, including a mounting mechanism for the container, including a hole in the bottom for water outlet, and possibly including a doughnut-shaped spot for upper water storage.
+- [ ] Compute printable geometry for the container, including slots for the tubing and the mounting mechanism.
+- [ ] Compute a heatmap on the container of areas where trapezoid-reflected solar intensities are non-uniform (as the perfect curve)
+- [ ] Correct actual power transferred to water in each region of tubing, considering the simulated trapezoidal discretization.
+- [ ] Choose an adhesive (?) effective for the mirrors and for the tubes, which can handle temperatures up to 125C.
+- [ ] Determine a mechanism for flow control at the outlet, ex. software flow control?
+
+- [ ] Fabricate the mirror, container, water containers, and try mounting it all.
+- [ ] Try running water through the entire mechanism, to make sure it can do that.
+- [ ] Spray-paint the tubing black (if it isn't already absorbive).
+
+- [ ] Include computations describing the efficiency of the reflector and the efficiency of the absorbive copper tubing.
+	- [ ] Can we borrow a spectrometer to characterize the two materials we end up with? Maybe even at the particular incident angles?
+
+- [ ] Try a FEM simulation of the final setup to solve for heat transfer over time.
+
+*Maybe we should just give the reflector feet and just pseudo-submerse it in the lower water collector?*
+
+*The water container could also be a 3D-printed thing; however, it will need waterproofing. Much better idea; it could be better to just use something normal. Literally a plastic bag or bowl or something.*
+
+*How will we know it works? 0.5L of water at 21C would, over the course of 15minutes, require 79 watts to reach a temperature of 55C. Since we know the incident wattage as solar light intensity, the final temperature will tell us how we did in terms efficiency.*

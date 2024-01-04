@@ -1,15 +1,15 @@
 ---
 title: "Solar Cooker Project Planning"
-date: "2024-01-02"
+date: "2024-01-04"
 abstract: |
-  Project planning for a solar cooker.
-author:
-  - name: Sofus Albert Høgsbro Rose (s174509)
-    email: s174509@dtu.dk
-    affiliation: 
-      - name: Technical University of Denmark
-        city: Kongens Lyngby
-        url: dtu.dk
+  Our approach to the Solar Cooker project.
+#author:
+#  - name: Sofus Albert Høgsbro Rose (s174509)
+#    email: s174509@dtu.dk
+#    affiliation: 
+#      - name: Technical University of Denmark
+#        city: Kongens Lyngby
+#        url: dtu.dk
 
 format:
   html:
@@ -35,17 +35,18 @@ format:
 \newpage
 
 # GANTT Chart
+This is the overarching plan (group )
 ```{mermaid}
 gantt
-    title Design-Build 3 Diagram
+    title Design-Build 3 Plan
     dateFormat YYYY-MM-DD
     section Simulation
-        Design :2023-01-01, 2d
+        Design :2023-01-01, 3d
         Thermal :2d
         MVP Validation :2023-01-07, 2d
         Validation :2023-01-12, 4d
     section Fabrication
-        Geometry :2023-01-04, 1d
+        Geometry :2023-01-05, 1d
         MVP :3d
         Production :5d
     section Control
@@ -53,13 +54,13 @@ gantt
         Shaders :2d
         Instrument :2023-01-09, 5d
     section Report
-        Preliminary :2023-01-01, 7d
+        Preliminary :2023-01-02, 7d
         Body :7d
         Polish :2d
         Exam :1d
 ```
 
-# TODO
+# Big Plan
 **Simulation**
 
 - [ ] Design: How is it going to work? From first principles.

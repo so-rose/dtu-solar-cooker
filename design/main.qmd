@@ -15,7 +15,7 @@ format:
   html:
     toc: true
     code-fold: true
-    #embed-resources: true
+    embed-resources: true
     #self-contained-math: true
     execute:
       output: "asis"
@@ -129,6 +129,7 @@ bound_side_length = spu.convert_to(
 diameter_reflector = bound_side_length
 diameter_reflector_SI = diameter_reflector / spu.meter
 height_reflector = bound_side_length / 8
+disp(height_reflector)
 ```
 and use to compute the particular parameterization of the reflector we need:
 ```{python}

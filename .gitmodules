@@ -1,0 +1,9 @@
+[submodule "code/code/libraries/DallasTemperature"]
+	path = code/code/libraries/DallasTemperature
+	url = https://github.com/milesburton/Arduino-Temperature-Control-Library.git
+[submodule "code/libraries/DallasTemperature"]
+	path = code/libraries/DallasTemperature
+	url = https://github.com/milesburton/Arduino-Temperature-Control-Library.git
+[submodule "code/libraries/OneWire"]
+	path = code/libraries/OneWire
+	url = https://github.com/PaulStoffregen/OneWire.git

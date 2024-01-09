@@ -90,11 +90,16 @@ gantt
 ## Fabrication List
 - [ ] Reflector: High-R parabolic shape.
 - [ ] Container: Internal parabolic boundary is 3D-printed, around which liquid tubes are wrapped, which in turn are painted with a high-A material that minimizes blackbody radiation loss.
+- [ ] Fabrication Device
 
 ## Shopping List
-- [ ] Water Tubing
-- [ ] Water Tube Clip
-- [ ] 2x Water Container (doughnut?)
+- [ ] 1/8 Inch Copper Tube
 - [ ] Black Spray Paint
-- [ ] 2x Artificial Sun Test Slots
-- [ ] Fabrication Facilities
+
+- [ ] Exact knife
+- [ ] Spray glue
+
+- [ ] Cold water tower
+- [ ] Hot water container
+
+- [ ] Funnel (for flow test)

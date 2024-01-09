@@ -489,14 +489,14 @@ spb.graphics(
 
 
 # Fabrication Procedure
-- [ ] Compute required length of 1/8 inch copper tubing for wrapping around, including space for outlet and inlet.
-- [ ] Compute volume contained within each segment of tubing, aka. measure the thickness.
-- [ ] Compute number and size of mirror (glass) trapezoids.
-- [ ] Compute printable geometry for the reflector, including slots for inserting trapezoid mirrors, including a mounting mechanism for the container, including a hole in the bottom for water outlet, and possibly including a doughnut-shaped spot for upper water storage.
-- [ ] Compute printable geometry for the container, including slots for the tubing and the mounting mechanism.
-- [ ] Compute a heatmap on the container of areas where trapezoid-reflected solar intensities are non-uniform (as the perfect curve)
+- [x] Compute required length of 1/8 inch copper tubing for wrapping around, including space for outlet and inlet.
+- [x] Compute volume contained within each segment of tubing, aka. measure the thickness.
+- [x] Compute number and size of mirror (glass) trapezoids.
+- [x] Compute printable geometry for the reflector, including slots for inserting trapezoid mirrors, including a mounting mechanism for the container, including a hole in the bottom for water outlet, and possibly including a doughnut-shaped spot for upper water storage.
+- [x] Compute printable geometry for the container, including slots for the tubing and the mounting mechanism.
+- [x] Compute a heatmap on the container of areas where trapezoid-reflected solar intensities are non-uniform (as the perfect curve)
 - [ ] Correct actual power transferred to water in each region of tubing, considering the simulated trapezoidal discretization.
-- [ ] Choose an adhesive (?) effective for the mirrors and for the tubes, which can handle temperatures up to 125C.
+- [x] Choose an adhesive (?) effective for the mirrors and for the tubes, which can handle temperatures up to 125C.
 - [ ] Determine a mechanism for flow control at the outlet, ex. software flow control?
 
 - [ ] Fabricate the mirror, container, water containers, and try mounting it all.
@@ -513,3 +513,14 @@ spb.graphics(
 *The water container could also be a 3D-printed thing; however, it will need waterproofing. Much better idea; it could be better to just use something normal. Literally a plastic bag or bowl or something.*
 
 *How will we know it works? 0.5L of water at 21C would, over the course of 15minutes, require 79 watts to reach a temperature of 55C. Since we know the incident wattage as solar light intensity, the final temperature will tell us how we did in terms efficiency.*
+
+
+
+After print
+- [ ] Another motor for the flow rate
+- [ ] Empirically measure
+- [ ] Print an output flow control
+
+- [ ] Cold water towers (cans?)
+- [ ] Hot water container
+Don't boil things!

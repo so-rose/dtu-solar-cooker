@@ -246,7 +246,7 @@ disp(
 We use the unmasked collection area to compute the total power transmitted, in terms of the "solar constant" $I_s$ (**NOTE: This is some kind of integral of the sun's spectral power distribution.**)
 ```{python}
 total_power = sp.simplify(
-    intensity_solar * unmasked_collection_area
+    intensity_solar * unmasked_collection_area * (2/3)
 )
 disp(
     sp.Eq(
@@ -305,10 +305,10 @@ The total incident power power at this value becomes:
 ```{python}
 disp(
     sp.Eq(
-        sp.Function("P_s")(5 * spu.cm),
+        sp.Function("P_s")(3 * spu.cm),
         total_power.subs({
 					intensity_solar_SI: 1361, #spu.watt/spu.meter**2
-					diameter_container_SI: 0.05,
+					diameter_container_SI: 0.03,
 				}).n(),
     )
 )
@@ -316,7 +316,7 @@ disp(
 
 The retained power after shading using this choice of container diameter is just over 97 percent:
 ```{python}
-diameter_container_chosen = 0.05 * spu.meter
+diameter_container_chosen = 0.03 * spu.meter
 
 disp(
 	(total_power / total_collection_power).subs({
@@ -483,6 +483,15 @@ spb.graphics(
 	),
 	backend=spb.KB,
 )
+```
+
+
+
+# Pressure Flow Rate
+
+We compute the water pressure
+```{python}
+
 ```
 
 

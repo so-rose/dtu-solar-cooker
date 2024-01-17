@@ -9,6 +9,6 @@ BOARD_TAG = uno
 ARDMK_DIR = /usr/share/arduino
 
 ARDUINO_SKETCHBOOK = $(ROOT_DIR)
-ARDUINO_LIBS = OneWire DallasTemperature
+ARDUINO_LIBS = OneWire DallasTemperature NonBlockingDallas Stepper
 
 include $(ARDMK_DIR)/Arduino.mk

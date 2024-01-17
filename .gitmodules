@@ -7,3 +7,9 @@
 [submodule "code/libraries/OneWire"]
 	path = code/libraries/OneWire
 	url = https://github.com/PaulStoffregen/OneWire.git
+[submodule "code/libraries/Stepper"]
+	path = code/libraries/Stepper
+	url = https://github.com/arduino-libraries/Stepper.git
+[submodule "code/libraries/NonBlockingDallas"]
+	path = code/libraries/NonBlockingDallas
+	url = https://github.com/Gbertaz/NonBlockingDallas.git

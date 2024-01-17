@@ -5,13 +5,22 @@ PORT = "/dev/ttyACM0"
 BAUD_RATE = 9600
 
 if __name__ == "__main__":
-	temp_sensor = serial.Serial(
+	device = serial.Serial(
 		port=PORT,
 		baudrate=BAUD_RATE,
 		timeout=0.1,
 	)
 	
+	cli_active = True
 	while True:
-		line = temp_sensor.readline()
+		if cli_active:
+			command = input(">> ")
+		
+			if command == "run":
+				cli_active = False
+			else:
+				device.write(command.encode())
+		
+		line = device.readline()
 		if line:
 			print(line.decode("utf-8"))

@@ -59,10 +59,14 @@
 #define RPM 10
 // - Speed of Motor (in Revolutions per Minute)
 
-#define DEG_FOR_SHADER_TOGGLE 81.8753
-// - Degrees Rotation to Open/Close Shader (Computed from Simulation)
+//#define DEG_FOR_SHADER_TOGGLE 81.8753
+#define DEG_FOR_SHADER_TOGGLE 92
+// - Degrees Rotation to Open/Close Shader (Computed empirically)
 
-// Utilities for Stepper
+
+//####################
+// - Utilities - Step Motor
+//####################
 #define DEG_TO_STEPS(deg) ( (long)(deg * (double)STEPS_PER_REV / 360.0) )
 // - Degrees are given as doubles, steps must be given as a long
 
@@ -86,13 +90,27 @@ bool isShaderOpen = false;
 
 
 //####################
+// - Reporters
+//####################
+void report_temp(float temperature){
+	Serial.print("C: ");
+	Serial.print(temperature);
+	Serial.print("\n");
+}
+
+void report_rot(long steps){
+	Serial.print("R: ");
+	Serial.print(steps);
+	Serial.print("\n");
+}
+
+
+
+//####################
 // - Temperature Readout
 //####################
 void handleIntervalElapsed(float temperature, bool valid, int deviceIndex){
-	//Serial.print("C: ");
-	//Serial.print(temperature);
-	//Serial.print("\n");
-
+	report_temp(temperature);
 	// Set LED Temperature Indicator
 	if (temperature >= LED_LIGHT_TEMP && !led_on) {
 		led_on = true;
@@ -109,12 +127,14 @@ void handleIntervalElapsed(float temperature, bool valid, int deviceIndex){
 //####################
 void openShaders() {
 	if (!isShaderOpen) {
+		report_rot(-DEG_TO_STEPS(DEG_FOR_SHADER_TOGGLE));
 		stepper.step(-DEG_TO_STEPS(DEG_FOR_SHADER_TOGGLE));
 		isShaderOpen = true;
 	}
 }
 void closeShaders() {
 	if (isShaderOpen) {
+		report_rot(DEG_TO_STEPS(DEG_FOR_SHADER_TOGGLE));
 		stepper.step(DEG_TO_STEPS(DEG_FOR_SHADER_TOGGLE));
 		isShaderOpen = false;
 	}
@@ -146,9 +166,11 @@ void loop() {
 			closeShaders();
 		} else if (command.startsWith("motor inc ")) {
 			long increment_steps = command.substring(10).toInt();
+			report_rot(increment_steps);
 			stepper.step(increment_steps);
 		} else if (command.startsWith("motor rot ")) {
 			double increment_degrees = command.substring(10).toDouble();
+			report_rot(DEG_TO_STEPS(increment_degrees));
 			stepper.step(DEG_TO_STEPS(increment_degrees));
 		} else if (command.startsWith("motor test")) {
 			stepper.step(1000);

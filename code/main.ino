@@ -30,7 +30,7 @@
 //####################
 // - Configuration - Temperature Sensor
 //####################
-#define LED_LIGHT_TEMP 30.0
+#define LED_MOTOR_LIGHT_TEMP 30.0
 // - Temperature Threshold for LED Activation
 // - Degrees Celcius.
 
@@ -107,22 +107,6 @@ void report_rot(long steps){
 
 
 //####################
-// - Temperature Readout
-//####################
-void handleIntervalElapsed(float temperature, bool valid, int deviceIndex){
-	report_temp(temperature);
-	// Set LED Temperature Indicator
-	if (temperature >= LED_LIGHT_TEMP && !led_on) {
-		led_on = true;
-		digitalWrite(LED_BUILTIN, HIGH);
-	} else if (temperature < LED_LIGHT_TEMP && led_on) {
-		led_on = false;
-		digitalWrite(LED_BUILTIN, LOW);
-	}
-}
-
-
-//####################
 // - Shader Control
 //####################
 void openShaders() {
@@ -137,6 +121,25 @@ void closeShaders() {
 		report_rot(DEG_TO_STEPS(DEG_FOR_SHADER_TOGGLE));
 		stepper.step(DEG_TO_STEPS(DEG_FOR_SHADER_TOGGLE));
 		isShaderOpen = false;
+	}
+}
+
+
+
+//####################
+// - Temperature Readout
+//####################
+void handleIntervalElapsed(float temperature, bool valid, int deviceIndex){
+	report_temp(temperature);
+	// Set LED Temperature Indicator
+	if (temperature >= LED_MOTOR_LIGHT_TEMP && !led_on) {
+		led_on = true;
+		digitalWrite(LED_BUILTIN, HIGH);
+		openShaders();
+	} else if (temperature < LED_MOTOR_LIGHT_TEMP && led_on) {
+		led_on = false;
+		digitalWrite(LED_BUILTIN, LOW);
+		closeShaders();
 	}
 }
 
